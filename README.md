@@ -1,6 +1,6 @@
 
 
-````markdown
+
 # 🏭 **Linear Regression Architecture Workshop — Robot Failure Prediction (MLOps Ready)**
 
 ---

@@ -59,7 +59,7 @@ Then the Linear Regression learns this mapping:
 
 ---
 
-## 🧠 **What Each Module Does (3 Lines Each)**
+## 🧠 **What Each Module Does**
 
 ### `src/data_loader.py`
 - Loads robot sensor data from CSV (and supports DB/API expansion later).

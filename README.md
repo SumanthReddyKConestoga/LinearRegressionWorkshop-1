@@ -1,11 +1,9 @@
-----
----
 ````markdown
-# 🤖 Robot Predictive Maintenance — Neon + Live Streaming Alerts + Dashboard (Workshop)
+**# 🤖 Robot Predictive Maintenance — Neon + Live Streaming Alerts + Dashboard (Workshop)**
 
 > **Executive Intent:** Turn raw robot telemetry into **actionable predictive maintenance signals** — with **trained thresholds**, **live-stream visualization**, **event logging**, and a **dashboard** backed by **Neon Postgres**.
 
-This project builds a clean end-to-end workflow:
+This project builds a clean end-to-end workflow:  
 1) **Train models + learn thresholds** from historical robot data  
 2) **Stream live data** per robot and detect **ALERT / ERROR** events in real-time  
 3) Persist everything to **Neon** and visualize outcomes in a **dashboard**
@@ -69,17 +67,14 @@ This is intentionally designed like a real-world pipeline: modular, logged, and 
 
 ---
 
----
-
 ## ⚙️ Environment Setup
 
 ### 1) Create & activate virtual environment
-
 ```bash
 python -m venv .venv
 # Windows PowerShell
 .\.venv\Scripts\activate
-```
+````
 
 ### 2) Install dependencies
 
@@ -245,6 +240,6 @@ This submission is designed to score highly because it demonstrates:
 Repository: `LinearRegressionWorkshop-1`
 Course: Workshop / Predictive Maintenance + Streaming Analytics
 
-
+```
 ::contentReference[oaicite:0]{index=0}
 ```

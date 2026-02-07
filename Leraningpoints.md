@@ -1,4 +1,3 @@
-```md
 # Practical Lab 1 — Predictive Maintenance
 
 ## My POV (What I built)
@@ -64,7 +63,6 @@
 - Set thresholds from the residual distribution:
   - **MinC = 95th percentile** of positive training residuals
   - **MaxC = 99th percentile** of positive training residuals
-
 
 ### How I chose T (anti-noise firewall)
 - Measure typical residual spike durations from training residual time series.
@@ -141,4 +139,3 @@
 - Chose **T using run-length behavior** to filter noise and detect sustained abnormality.
 - Implemented Alert/Error using a **continuous-duration state machine** with complete event logging.
 - Flagged failure risk when **Error persists**, indicating sustained abnormal consumption consistent with fault development.
-```

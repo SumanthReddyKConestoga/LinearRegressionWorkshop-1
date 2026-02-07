@@ -1,4 +1,4 @@
-```md
+
 # 🤖 Robot Predictive Maintenance — Neon + Live Streaming Alerts + Dashboard (Workshop)#**
 
 > **Executive Intent:** Turn raw robot telemetry into **actionable predictive maintenance signals** — with **trained thresholds**, **live-stream visualization**, **event logging**, and a **dashboard** backed by **Neon Postgres**.

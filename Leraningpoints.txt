@@ -1,0 +1,172 @@
+## Practical Lab 1 — Predictive Maintenance 
+
+### My POV (What I built)
+
+* I built a predictive-maintenance pipeline where **baseline behavior is learned from historical training data** (Neon PostgreSQL) and **risk is detected from live deviation** (streaming synthetic test data).
+* I model **each robot independently** and train **axis-wise baselines (Time → Axis #1–#8)** because robots and axes have different operating profiles; one global model would blur patterns and increase false positives.
+* The regression model does not “predict failure” directly; it predicts the **expected current trend**. **Failure risk is inferred when observed current persistently exceeds the expected baseline**.
+
+---
+
+## 1) EDA (Exploratory Data Analysis) 
+
+### Data Quality Validation
+
+* Validate dataset integrity per robot: **missing values, duplicates, time monotonicity**, and **axis range checks**.
+* Confirm training data reflects **normal operating conditions**, because thresholds are only valid if the baseline is clean.
+
+### Central Tendency & Dispersion (Per Axis, Per Robot)
+
+* Compute **mean, median** (typical current) and **std, IQR** (natural variability) for each axis (#1–#8).
+* Insight: axes with higher dispersion are naturally noisier, so **thresholds must be data-driven**, not guessed.
+
+### Trend Understanding (Time vs Axis)
+
+* Plot **Time vs Axis** scatter plots to inspect drift, stability, and operating modes.
+* Fit a baseline regression line per axis and verify the trend aligns with observed behavior.
+
+### Residuals (Where anomalies live)
+
+* Compute residuals: **residual = observed − predicted**.
+* Plot residuals over time to detect **bursts vs sustained deviations**.
+* Plot residual distributions (histogram/boxplot) to separate **normal noise envelope** from true outliers.
+
+**EDA Insight (What I conclude)**
+
+* “Normal” is not a constant value; it’s a **trend + noise envelope**. Residuals quantify the envelope and make the alerting logic explainable.
+
+---
+
+## 2) Regression Models (Time → Axis #1–#8) — Baseline Learning
+
+* Train **8 univariate linear regression models** per robot: Time as input, Axis as output.
+* Record **slope and intercept** for each axis to keep the system reproducible and auditable.
+* Overlay regression lines on scatter plots to show the expected baseline trajectory.
+
+**Talking Point**
+
+* “Regression gives an explainable baseline. In predictive maintenance, the key signal is not the absolute current—it’s **unexpected deviation from the expected trend**.”
+
+---
+
+## 3) Residual Analysis — Threshold Justification (Most Important for 10/10)
+
+* Use training residuals to define the **normal deviation envelope** per axis.
+* Focus on **positive residuals** (above regression line) as abnormal excess consumption (early symptom of friction/load/wear).
+* Compare axes by residual spread and outlier frequency to identify which axes are most sensitive to anomalies.
+
+**Talking Point**
+
+* “Residuals beat raw thresholds because they automatically account for drift and operating conditions—this is ‘expected vs actual’ monitoring.”
+
+---
+
+## 4) Threshold Discovery (MinC, MaxC, T) — Defensible, Evidence-Based
+
+### Definitions (Clear and Testable)
+
+* **MinC**: minimum deviation above baseline to trigger **Alert** if sustained.
+* **MaxC**: higher deviation above baseline to trigger **Error** if sustained.
+* **T**: minimum continuous time (seconds) deviation must persist.
+
+### How I derived MinC and MaxC (Pick one and document)
+
+* **Quantile method (robust):**
+
+  * MinC = **95th percentile** of positive training residuals
+  * MaxC = **99th percentile** of positive training residuals
+* **OR Sigma/SPC method (classic control limits):**
+
+  * MinC = μ(residual) + **2σ**
+  * MaxC = μ(residual) + **3σ**
+
+### How I chose T (Anti-noise firewall)
+
+* Measure typical residual spike durations from training residual time series.
+* Set **T above normal spike duration** to reduce false positives and ensure alerts represent sustained abnormality.
+
+**Threshold Insight**
+
+* MinC is the **early-warning band** (“watch this machine”).
+* MaxC is the **critical band** (“act now / likely failure developing”).
+* T prevents “chatty monitoring” by filtering transient spikes.
+
+---
+
+## 5) Alert & Error Rules
+
+* residual(t) = observed(t) − predicted(t)
+* **Alert event** if residual(t) ≥ **MinC** continuously for ≥ **T seconds**
+* **Error event** if residual(t) ≥ **MaxC** continuously for ≥ **T seconds**
+* Log every event with: **robot_id, axis, event_type, start_time, end_time, duration_sec, max_residual, avg_residual, threshold_used**
+
+**Talking Point**
+
+* “This is a clean escalation policy: Alert = early drift; Error = sustained critical deviation.”
+
+---
+
+## 6) Streaming Simulation (CSV/DataFrame → Scoring → Events)
+
+* Simulate streaming by emitting one record per time step (row-by-row).
+* For each incoming record:
+
+  * Predict expected axis value using the trained regression model
+  * Compute residual
+  * Update continuous-duration counters (state-machine logic)
+  * Emit Alert/Error when conditions persist for ≥ T seconds
+
+**Talking Point**
+
+* “This matches industrial telemetry: ingestion → real-time scoring → alerting → event logging.”
+
+---
+
+## 7) Synthetic Test Data (Realistic + Controlled Validation)
+
+* Generate test data using training metadata (similar mean/std, similar ranges per axis).
+* Normalize/standardize using **training parameters only** (no leakage):
+
+  * Min-Max normalization or Z-score standardization based on training stats.
+* Inject controlled anomaly windows to prove that Alert/Error triggers behave as expected.
+
+**Insight**
+
+* “Synthetic streaming lets me validate detection logic reliably, including edge cases and sustained drift.”
+
+---
+
+## 8) Database Integration (Neon PostgreSQL) — Reproducible Training
+
+* Pull training data from **Neon PostgreSQL** into the application for model training.
+* Use consistent schema and reproducible SQL queries.
+* Optionally store alert/error events back into a DB table, or log to CSV for submission.
+
+**Talking Point**
+
+* “Training-from-DB ensures reproducibility: the baseline is sourced from a single truth system.”
+
+## 9) Visualization & Proof (Regression + Alert/Error Annotations)
+
+* For each axis plot:
+
+  * Scatter: Time vs observed
+  * Regression line: predicted
+  * Overlay Alert markers and Error markers
+  * Annotate each event with **duration and peak deviation**
+
+**Talking Point**
+
+* “Plots make the detection logic transparent—reviewers can visually verify why an event triggered.”
+
+
+## High-Impact Talking Points 
+
+* “I trained **robot-specific, axis-specific baselines** to avoid blending operating profiles.”
+* “My anomaly signal is **residuals**, not raw current—this is the correct ‘expected vs actual’ monitoring approach.”
+* “MinC/MaxC are **derived from training residual distributions** (quantiles or SPC limits), not guessed.”
+* “T is chosen from **run-length behavior** to filter noise and detect sustained abnormality.”
+* “Alerts and Errors are implemented as a **continuous-duration state machine** with complete event logging for auditability.”
+* “Failure risk is flagged when **Error persists**, because sustained deviation indicates abnormal consumption consistent with fault development.”
+
+---
